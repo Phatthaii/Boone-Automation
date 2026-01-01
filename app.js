@@ -3,7 +3,7 @@ const SUPABASE_URL = "https://vprtarhfpjcgshciadca.supabase.co";
 const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq";
 const LIFF_ID = "2008806162-IOgthIqs";
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Utility: Get URL Parameter
 function getQueryParam(param) {
@@ -23,7 +23,7 @@ async function initApp() {
 
     try {
         // Fetch Shop Details
-        const { data: shop, error } = await supabase
+        const { data: shop, error } = await supabaseClient
             .from("shops")
             .select("*")
             .eq("id", shopId)
@@ -188,7 +188,7 @@ document.getElementById("bookingForm").addEventListener("submit", async (e) => {
 
     console.log("Submitting:", bookingData);
 
-    const { error } = await supabase.from("bookings").insert([bookingData]);
+    const { error } = await supabaseClient.from("bookings").insert([bookingData]);
 
     if (error) {
         alert("เกิดข้อผิดพลาด: " + error.message);
