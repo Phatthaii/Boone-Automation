@@ -1,7 +1,7 @@
 // --- Configuration ---
 const SUPABASE_URL = "https://vprtarhfpjcgshciadca.supabase.co";
 const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq";
-const LIFF_ID = "2008806162-IOgthIqs";
+const LIFF_ID = "2008806162-K39SJq6X";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
