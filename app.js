@@ -1,8 +1,7 @@
 // --- Configuration ---
-// TODO: Replace with your actual keys
-const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-const SUPABASE_KEY = "YOUR_ANON_KEY"; 
-const LIFF_ID = "YOUR_LIFF_ID";
+const SUPABASE_URL = "https://vprtarhfpjcgshciadca.supabase.co";
+const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq";
+const LIFF_ID = "2008806162-IOgthIqs";
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -15,7 +14,7 @@ function getQueryParam(param) {
 // 1. Initialize App
 async function initApp() {
     const shopId = getQueryParam("shop_id");
-    
+
     // Validate Shop ID
     if (!shopId) {
         showError("ไม่พบร้านค้า (Require shop_id)");
@@ -56,7 +55,7 @@ async function initApp() {
 // 2. Render Dynamic UI based on Business Type
 function renderShopUI(shop) {
     document.getElementById("shopName").innerText = shop.name;
-    
+
     const iconEl = document.getElementById("shopIcon");
     const dynamicDiv = document.getElementById("dynamicFields");
     let html = "";
@@ -158,14 +157,14 @@ document.getElementById("bookingForm").addEventListener("submit", async (e) => {
     const date = document.getElementById("date").value;
     const time = document.getElementById("time").value;
     const userId = document.getElementById("userId").value;
-    
+
     // Dynamic Data
     const detail1 = document.getElementById("detail1") ? document.getElementById("detail1").value : "";
     const detail2 = document.getElementById("detail2") ? document.getElementById("detail2").value : "";
-    
+
     let serviceType = "";
-    if(document.getElementById("serviceType")) {
-         serviceType = document.getElementById("serviceType").value;
+    if (document.getElementById("serviceType")) {
+        serviceType = document.getElementById("serviceType").value;
     }
 
     // Construct JSON Details based on context
@@ -197,7 +196,7 @@ document.getElementById("bookingForm").addEventListener("submit", async (e) => {
         btn.innerText = "ยืนยันการจอง";
     } else {
         alert("✅ จองสำเร็จ! \nเราจะส่งการแจ้งเตือนให้ทราบผ่าน LINE ครับ");
-        if(liff.isInClient()) liff.closeWindow();
+        if (liff.isInClient()) liff.closeWindow();
         else location.reload();
     }
 });
