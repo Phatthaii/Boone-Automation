@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServiceBook - จองคิวออนไลน์</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=2" />
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <div class="background-overlay"></div>
+    <div class="container" id="appContainer" style="display:none;">
+        <header>
+            <div class="logo-area">
+                <!-- Icon will change based on business type -->
+                <i id="shopIcon" class="fas fa-store fa-3x"></i>
+            </div>
+            <h1 id="shopName">กำลังโหลดข้อมูลร้าน...</h1>
+            <p id="shopDesc">ระบบจองคิวออนไลน์</p>
+        </header>
+
+        <form id="bookingForm">
+            <!-- Hidden Fields -->
+            <input type="hidden" id="userId" />
+            <input type="hidden" id="displayName" />
+            <input type="hidden" id="shopId" />
+
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> ชื่อ - นามสกุล</label>
+                <input type="text" id="name" placeholder="ระบุชื่อของคุณ" required />
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-phone"></i> เบอร์โทรศัพท์</label>
+                <input type="tel" id="phone" placeholder="08x-xxx-xxxx" required />
+            </div>
+
+            <!-- Dynamic Section: Changes based on Business Type -->
+            <div id="dynamicFields"></div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="far fa-calendar-alt"></i> วันที่จอง</label>
+                    <input type="date" id="date" required />
+                </div>
+                <div class="form-group">
+                    <label><i class="far fa-clock"></i> เวลา</label>
+                    <input type="time" id="time" required />
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn">ยืนยันการจอง</button>
+        </form>
+
+        <div id="statusMessage"></div>
+    </div>
+
+    <!-- Error/Loading View -->
+    <div id="loadingView" class="container" style="text-align:center;">
+        <br>
+        <i class="fas fa-circle-notch fa-spin fa-3x" style="color:#004aad;"></i>
+        <p style="margin-top:20px;">กำลังโหลดร้านค้า...</p>
+    </div>
+
+    <script type="module" src="app.js?v=2"></script>
+</body>
+
+</html>
