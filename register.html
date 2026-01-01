@@ -62,7 +62,8 @@
         const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq";
         const LIFF_ID = "2008806162-IOgthIqs"; // Use a LIFF ID that allows this URL
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Define client with a different name to avoid conflict with global 'supabase'
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function main() {
             try {
@@ -108,7 +109,7 @@
             btn.innerText = "กำลังสร้างร้านค้า...";
 
             // Insert into Shops
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('shops')
                 .insert([
                     {
