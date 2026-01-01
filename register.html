@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
     <div class="background-overlay"></div>
@@ -56,10 +58,9 @@
 
     <script>
         // --- Configuration ---
-        // TODO: Update these after creating the Supabase project
-        const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"; 
-        const SUPABASE_KEY = "YOUR_ANON_KEY"; 
-        const LIFF_ID = "YOUR_LIFF_ID"; // Use a LIFF ID that allows this URL
+        const SUPABASE_URL = "https://vprtarhfpjcgshciadca.supabase.co";
+        const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq";
+        const LIFF_ID = "2008806162-IOgthIqs"; // Use a LIFF ID that allows this URL
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -67,19 +68,19 @@
             try {
                 const btn = document.getElementById("submitBtn");
                 const loader = document.getElementById("loadingMessage");
-                
+
                 loader.style.display = "block";
                 btn.style.display = "none";
 
                 await liff.init({ liffId: LIFF_ID });
-                
+
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
                     document.getElementById("ownerLineId").value = profile.userId;
                     document.getElementById("ownerDisplayName").value = profile.displayName;
-                    
+
                     loader.style.display = "none";
                     btn.style.display = "block";
                     btn.disabled = false;
@@ -95,12 +96,12 @@
 
         document.getElementById("registerForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-            
+
             const name = document.getElementById("shopName").value;
             const type = document.getElementById("businessType").value;
             const lineId = document.getElementById("ownerLineId").value;
-            
-            if(!lineId) return alert("ไม่พบข้อมูล LINE กรุณารีเฟรช");
+
+            if (!lineId) return alert("ไม่พบข้อมูล LINE กรุณารีเฟรช");
 
             const btn = document.getElementById("submitBtn");
             btn.disabled = true;
@@ -110,8 +111,8 @@
             const { data, error } = await supabase
                 .from('shops')
                 .insert([
-                    { 
-                        name: name, 
+                    {
+                        name: name,
                         business_type: type,
                         owner_line_id: lineId,
                         status: 'trial'
@@ -142,4 +143,5 @@
         });
     </script>
 </body>
+
 </html>
