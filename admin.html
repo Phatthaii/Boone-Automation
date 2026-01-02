@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบหลังบ้าน - ServiceBook</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=2" />
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Specific Admin Styles */
+        .booking-card {
+            background: #f8fafc;
+            border-left: 5px solid #004aad;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .booking-card.confirmed {
+            border-left-color: #2ecc71;
+        }
+
+        .booking-card.cancelled {
+            border-left-color: #e74c3c;
+            opacity: 0.7;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .time-badge {
+            background: #004aad;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .customer-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .detail-row {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .detail-row i {
+            width: 20px;
+            text-align: center;
+            margin-right: 5px;
+            color: #94a3b8;
+        }
+
+        .action-area {
+            margin-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+            text-align: right;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            width: auto;
+            margin-left: 5px;
+            display: inline-block;
+        }
+
+        .btn-confirm {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #fee2e2;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="background-overlay"></div>
+    <div class="container">
+        <header>
+            <div class="logo-area"><i class="fas fa-chart-line fa-3x"></i></div>
+            <h1>จัดการร้านค้า</h1>
+            <p id="shopNameDisplay">กำลังโหลด...</p>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loadingView" style="text-align:center;">
+            <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+            <p>ยืนยันตัวตน...</p>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboardView" style="display:none;">
+            <div style="background: #eff6ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="margin:0 0 10px 0; color:#004aad;">🔗 ลิงก์สำหรับลูกค้าของคุณ</h3>
+                <input type="text" id="shareLink" readonly style="font-size:12px; color:#555;" onclick="this.select()">
+                <button type="button" onclick="copyLink()" class="btn-sm" style="margin-top:5px;">คัดลอกลิงก์</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">📅 คิววันนี้</h3>
+                <button onclick="loadBookings()" style="width:auto; padding:5px 10px; font-size:12px; margin:0;"><i
+                        class="fas fa-sync"></i></button>
+            </div>
+
+            <div id="bookingList">
+                <!-- Bookings Rendered Here -->
+            </div>
+        </div>
+
+        <!-- No Shop State -->
+        <div id="noShopView" style="display:none; text-align:center;">
+            <i class="fas fa-store-slash fa-3x" style="color:#ccc;"></i>
+            <h3>ไม่พบข้อมูลร้านค้า</h3>
+            <p>คุณยังไม่ได้ลงทะเบียนร้านค้าในระบบ</p>
+            <a href="register.html" style="display:block; margin-top:15px; text-decoration:none;">
+                <button>สมัครเปิดร้านใหม่</button>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG
+        const SUPABASE_URL = "https://vprtarhfpjcgshciadca.supabase.co";
+        const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq";
+        const LIFF_ID = "2008806162-K39SJq6X";
+        const BASE_URL = "https://phatthaii.github.io/Boone-Automation"; // Your GitHub Pages URL
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentShopId = null;
+
+        async function main() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                const profile = await liff.getProfile();
+                checkShopOwner(profile.userId);
+            } catch (err) {
+                alert("LIFF Init Error: " + err.message);
+            }
+        }
+
+        async function checkShopOwner(userId) {
+            // Find shop owned by this LINE ID
+            const { data: shops, error } = await supabase
+                .from('shops')
+                .select('*')
+                .eq('owner_line_id', userId)
+                .limit(1);
+
+            document.getElementById("loadingView").style.display = 'none';
+
+            if (shops && shops.length > 0) {
+                // Found Shop
+                const shop = shops[0];
+                currentShopId = shop.id;
+
+                document.getElementById("dashboardView").style.display = 'block';
+                document.getElementById("shopNameDisplay").innerText = shop.name;
+                document.getElementById("shareLink").value = `${BASE_URL}/?shop_id=${shop.id}`;
+
+                loadBookings();
+            } else {
+                // No Shop
+                document.getElementById("noShopView").style.display = 'block';
+                document.getElementById("shopNameDisplay").innerText = "ยินดีต้อนรับ";
+            }
+        }
+
+        async function loadBookings() {
+            const list = document.getElementById("bookingList");
+            list.innerHTML = '<p style="text-align:center; color:#ccc;">กำลังโหลดคิว...</p>';
+
+            // Get Today's Date
+            const today = new Date().toISOString().split('T')[0];
+
+            // Setup realtime subscription or just fetch? Fetch for now.
+            const { data: bookings, error } = await supabase
+                .from('bookings')
+                .select('*')
+                .eq('shop_id', currentShopId)
+                // .eq('date', today) // Uncomment to filter only today
+                .order('date', { ascending: true })
+                .order('time', { ascending: true });
+
+            list.innerHTML = "";
+
+            if (!bookings || bookings.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:#999;"><i class="fas fa-calendar-check fa-2x"></i><p>ยังไม่มีคิวจองเร็วๆ นี้</p></div>';
+                return;
+            }
+
+            bookings.forEach(b => {
+                let detailHtml = "";
+                if (b.details && Object.keys(b.details).length > 0) {
+                    // Try to get values from generic details
+                    const d1 = b.details.detail1 || b.car || "";
+                    const d2 = b.details.detail2 || b.plate_number || "";
+                    if (d1) detailHtml += `<div class="detail-row"><i class="fas fa-info-circle"></i> ${d1} ${d2}</div>`;
+                }
+
+                const card = document.createElement("div");
+                card.className = `booking-card ${b.status}`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="time-badge">${b.time.slice(0, 5)}</span>
+                        <span style="font-size:12px; color:#666;">${b.date}</span>
+                    </div>
+                    <div class="customer-name">${b.name} <span style="font-weight:400; font-size:14px; color:#666;">(${b.phone})</span></div>
+                    <div class="detail-row"><i class="fas fa-tools"></i> ${b.service_type || '-'}</div>
+                    ${detailHtml}
+                    <!--
+                    <div class="action-area">
+                        <button class="btn-sm btn-cancel">ยกเลิก</button>
+                        <button class="btn-sm btn-confirm">เช็คอิน</button>
+                    </div>
+                    -->
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        window.copyLink = function () {
+            const copyText = document.getElementById("shareLink");
+            copyText.select();
+            document.execCommand("copy");
+            alert("คัดลอกลิงก์แล้ว! ส่งให้ลูกค้าได้เลย");
+        }
+
+        main();
+    </script>
+</body>
+
+</html>
