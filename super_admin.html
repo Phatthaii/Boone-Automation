@@ -103,48 +103,48 @@
             const totalBookingsEl = document.getElementById("totalBookings");
             const totalShopsEl = document.getElementById("totalShops");
 
-            list.innerHTML = '<p style="text-align:center; color:#ccc;">กำลังโหลด...</p>';
+            list.innerHTML = '<p style="text-align:center; color:#ccc;"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</p>';
 
-            // 1. Fetch Shops
-            const { data: shops, error: shopError } = await supabase
-                .from('shops')
-                .select('*')
-                .order('created_at', { ascending: false });
+            try {
+                // 1. Fetch Shops
+                const { data: shops, error: shopError } = await supabase
+                    .from('shops')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-            // 2. Fetch Total Bookings Count
-            const { count, error: bookingError } = await supabase
-                .from('bookings')
-                .select('*', { count: 'exact', head: true });
+                if (shopError) throw shopError;
 
-            if (shopError) {
-                list.innerHTML = `<div style="color:red;">Error: ${shopError.message}</div>`;
-                return;
-            }
+                // 2. Fetch Total Bookings Count
+                const { count, error: bookingError } = await supabase
+                    .from('bookings')
+                    .select('*', { count: 'exact', head: true });
 
-            // Update Stats
-            totalBookingsEl.innerText = count || 0;
-            totalShopsEl.innerText = shops.length || 0;
+                if (bookingError) throw bookingError;
 
-            // Render Shop List
-            list.innerHTML = "";
-            shops.forEach(shop => {
-                const el = document.createElement("div");
-                el.className = "shop-card";
-                el.innerHTML = `
-                    <div class="shop-info">
-                        <h3><i class="fas fa-store"></i> ${shop.name}</h3>
-                        <p>${shop.business_type} | Owner: ${shop.owner_line_id ? 'Linked' : 'No Line ID'}</p>
-                    </div>
-                    <a href="index.html?shop_id=${shop.id}" target="_blank" style="text-decoration:none; font-size:12px; color:#004aad;">
-                        ดูหน้าจอง <i class="fas fa-chevron-right"></i>
-                    </a>
-                `;
-                list.appendChild(el);
-            });
-        }
+                // Update Stats
+                totalBookingsEl.innerText = count || 0;
+                totalShopsEl.innerText = shops ? shops.length : 0;
 
-        loadData();
-    </script>
-</body>
+                // Render Shop List
+                list.innerHTML = "";
+                if (!shops || shops.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; color:#ccc;">ไม่พบร้านค้าในระบบ</p>';
+                    return;
+                }
 
-</html>
+                shops.forEach(shop => {
+                    const el = document.createElement("div");
+                    el.className = "shop-card";
+                    el.innerHTML = `
+                        <div class="shop-info">
+                            <h3><i class="fas fa-store"></i> ${shop.name}</h3>
+                            <p>${shop.business_type} | Owner: ${shop.owner_line_id ? 'Linked' : 'No Line ID'}</p>
+                        </div>
+                        <a href="index.html?shop_id=${shop.id}" target="_blank" style="text-decoration:none; font-size:12px; color:#004aad;">
+                            ดูหน้าจอง <i class="fas fa-chevron-right"></i>
+                        </a>
+                    `;
+                    list.appendChild(el);
+                });
+
+       
