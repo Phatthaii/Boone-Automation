@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - System Owner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=2" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .shop-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shop-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .shop-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .stat-box {
+            background: #004aad;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: #004aad;
+            cursor: pointer;
+            float: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-overlay"></div>
+    <div class="container">
+        <header>
+            <div class="logo-area"><i class="fas fa-user-shield fa-3x"></i></div>
+            <h1>System Owner</h1>
+            <p>ภาพรวมระบบทั้งหมด</p>
+        </header>
+
+        <div class="stat-box">
+            <div class="stat-title">การจองทั้งหมดในระบบ</div>
+            <div class="stat-value" id="totalBookings">...</div>
+            <div style="font-size:12px; margin-top:5px;">
+                ร้านค้าทั้งหมด: <span id="totalShops">...</span> ร้าน
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3>🏪 รายชื่อร้านค้า</h3>
+            <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync"></i> รีเฟรช</button>
+        </div>
+
+        <div id="shopList">
+            <p style="text-align:center; color:#999;">กำลังโหลด...</p>
+        </div>
+
+    </div>
+
+    <script>
+        // CONFIG
+        const SUPABASE_URL = "https://vprtarhfpjcgshciadca.supabase.co";
+        const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq"; // Use Anon Key if RLS allow, or Service Role Key if strictly backend (Be careful with Service Role in frontend!)
+        // Note: For a real Super Admin, you should handle Auth carefully. Here we assume Anon Key usually has read access or we rely on some minimal security.
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadData() {
+            const list = document.getElementById("shopList");
+            const totalBookingsEl = document.getElementById("totalBookings");
+            const totalShopsEl = document.getElementById("totalShops");
+
+            list.innerHTML = '<p style="text-align:center; color:#ccc;">กำลังโหลด...</p>';
+
+            // 1. Fetch Shops
+            const { data: shops, error: shopError } = await supabase
+                .from('shops')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            // 2. Fetch Total Bookings Count
+            const { count, error: bookingError } = await supabase
+                .from('bookings')
+                .select('*', { count: 'exact', head: true });
+
+            if (shopError) {
+                list.innerHTML = `<div style="color:red;">Error: ${shopError.message}</div>`;
+                return;
+            }
+
+            // Update Stats
+            totalBookingsEl.innerText = count || 0;
+            totalShopsEl.innerText = shops.length || 0;
+
+            // Render Shop List
+            list.innerHTML = "";
+            shops.forEach(shop => {
+                const el = document.createElement("div");
+                el.className = "shop-card";
+                el.innerHTML = `
+                    <div class="shop-info">
+                        <h3><i class="fas fa-store"></i> ${shop.name}</h3>
+                        <p>${shop.business_type} | Owner: ${shop.owner_line_id ? 'Linked' : 'No Line ID'}</p>
+                    </div>
+                    <a href="index.html?shop_id=${shop.id}" target="_blank" style="text-decoration:none; font-size:12px; color:#004aad;">
+                        ดูหน้าจอง <i class="fas fa-chevron-right"></i>
+                    </a>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>
