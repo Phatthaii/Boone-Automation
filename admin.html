@@ -124,6 +124,25 @@
                         class="fas fa-sync"></i></button>
             </div>
 
+            <!-- Stats Cards -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <div
+                    style="background:white; padding:15px; border-radius:10px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05); border-bottom:4px solid #004aad;">
+                    <span style="font-size:24px; font-weight:bold; color:#004aad;" id="statTotal">0</span>
+                    <div style="font-size:12px; color:#888;">คิวทั้งหมดวันนี้</div>
+                </div>
+                <div
+                    style="display:none; background:white; padding:15px; border-radius:10px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05); border-bottom:4px solid #f1c40f;">
+                    <span style="font-size:24px; font-weight:bold; color:#f1c40f;" id="statPending">0</span>
+                    <div style="font-size:12px; color:#888;">รอดำเนินการ</div>
+                </div>
+                <div
+                    style="background:white; padding:15px; border-radius:10px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05); border-bottom:4px solid #2ecc71;">
+                    <span style="font-size:24px; font-weight:bold; color:#2ecc71;" id="statDone">0</span>
+                    <div style="font-size:12px; color:#888;">เสร็จสิ้น</div>
+                </div>
+            </div>
+
             <div id="bookingList">
                 <!-- Bookings Rendered Here -->
             </div>
@@ -191,58 +210,75 @@
             }
         }
 
-        async function loadBookings() {
-            const list = document.getElementById("bookingList");
-            list.innerHTML = '<p style="text-align:center; color:#ccc;">กำลังโหลดคิว...</p>';
+        const list = document.getElementById("bookingList");
+        const statTotal = document.getElementById("statTotal");
+        const statDone = document.getElementById("statDone");
 
-            // Get Today's Date
-            const today = new Date().toISOString().split('T')[0];
+        list.innerHTML = '<p style="text-align:center; color:#ccc;">กำลังโหลดคิว...</p>';
 
-            // Setup realtime subscription or just fetch? Fetch for now.
-            const { data: bookings, error } = await supabase
-                .from('bookings')
-                .select('*')
-                .eq('shop_id', currentShopId)
-                // .eq('date', today) // Uncomment to filter only today
-                .order('date', { ascending: true })
-                .order('time', { ascending: true });
+        const today = new Date().toISOString().split('T')[0];
 
-            list.innerHTML = "";
+        // Fetch Bookings for this shop
+        // Order by Status (pending first) then Date/Time
+        const { data: bookings, error } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('shop_id', currentShopId)
+            .order('date', { ascending: true })
+            .order('time', { ascending: true });
 
-            if (!bookings || bookings.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:20px; color:#999;"><i class="fas fa-calendar-check fa-2x"></i><p>ยังไม่มีคิวจองเร็วๆ นี้</p></div>';
-                return;
+        list.innerHTML = "";
+
+        if (error) {
+            console.error(error);
+            list.innerHTML = '<div style="color:red; text-align:center;">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+            return;
+        }
+
+        if (!bookings || bookings.length === 0) {
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#999;"><i class="fas fa-calendar-check fa-2x"></i><p>ยังไม่มีคิวจองเร็วๆ นี้</p></div>';
+            statTotal.innerText = "0";
+            statDone.innerText = "0";
+            return;
+        }
+
+        // Calculate Stats (Client-side filtering for 'Today' if query returns all)
+        // Note: Currently query returns ALL future/past bookings. Let's filter for display or just count today?
+        // To make "Dashboard" meaningful, let's count "Today's" bookings for the stats.
+
+        const bookingsToday = bookings.filter(b => b.date === today);
+        const bookingsDoneToday = bookingsToday.filter(b => b.status === 'confirmed' || b.status === 'completed'); // Assuming 'confirmed' means done or we use actual status
+
+        statTotal.innerText = bookingsToday.length;
+        statDone.innerText = bookingsDoneToday.length;
+
+        bookings.forEach(b => {
+            // Highlight today's bookings
+            const isToday = b.date === today;
+            let dateBadge = isToday ? '<span style="color:#e74c3c; font-weight:bold;">วันนี้</span>' : b.date;
+
+            let detailHtml = "";
+            if (b.details && Object.keys(b.details).length > 0) {
+                const d1 = b.details.detail1 || b.car || "";
+                const d2 = b.details.detail2 || b.plate_number || "";
+                if (d1) detailHtml += `<div class="detail-row"><i class="fas fa-info-circle"></i> ${d1} ${d2}</div>`;
             }
 
-            bookings.forEach(b => {
-                let detailHtml = "";
-                if (b.details && Object.keys(b.details).length > 0) {
-                    // Try to get values from generic details
-                    const d1 = b.details.detail1 || b.car || "";
-                    const d2 = b.details.detail2 || b.plate_number || "";
-                    if (d1) detailHtml += `<div class="detail-row"><i class="fas fa-info-circle"></i> ${d1} ${d2}</div>`;
-                }
+            const card = document.createElement("div");
+            card.className = `booking-card ${b.status}`;
+            card.style.opacity = isToday ? '1' : '0.7';
 
-                const card = document.createElement("div");
-                card.className = `booking-card ${b.status}`;
-                card.innerHTML = `
+            card.innerHTML = `
                     <div class="card-header">
                         <span class="time-badge">${b.time.slice(0, 5)}</span>
-                        <span style="font-size:12px; color:#666;">${b.date}</span>
+                        <span style="font-size:12px; color:#666;">${dateBadge}</span>
                     </div>
                     <div class="customer-name">${b.name} <span style="font-weight:400; font-size:14px; color:#666;">(${b.phone})</span></div>
                     <div class="detail-row"><i class="fas fa-tools"></i> ${b.service_type || '-'}</div>
                     ${detailHtml}
-                    <!--
-                    <div class="action-area">
-                        <button class="btn-sm btn-cancel">ยกเลิก</button>
-                        <button class="btn-sm btn-confirm">เช็คอิน</button>
-                    </div>
-                    -->
                 `;
-                list.appendChild(card);
-            });
-        }
+            list.appendChild(card);
+        });
 
         window.copyLink = function () {
             const copyText = document.getElementById("shareLink");
