@@ -147,4 +147,17 @@
                     list.appendChild(el);
                 });
 
-       
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = `<div style="color:red; text-align:center; padding:20px; border:1px dashed red; border-radius:10px;">
+                    <strong>Error Loading Data</strong><br>
+                    <small>${err.message}</small>
+                </div>`;
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>
