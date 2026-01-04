@@ -127,11 +127,6 @@
                     throw new Error("Supabase SDK not loaded. Check internet connection or adblocker.");
                 }
 
-                // Helper for timeout
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Connection Timeout: Supabase is too slow (10s)")), 10000)
-                );
-
                 // 1. Fetch Shops
                 const shopsPromise = supabaseClient
                     .from('shops')
