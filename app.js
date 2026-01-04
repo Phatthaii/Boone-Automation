@@ -180,7 +180,7 @@ document.getElementById("bookingForm").addEventListener("submit", async (e) => {
     const phone = document.getElementById("phone").value;
     const date = document.getElementById("date").value;
     const time = document.getElementById("time").value;
-    const userId = document.getElementById("userId").value;
+    // const userId = document.getElementById("userId").value; // Already validated above
 
     // Dynamic Data
     const detail1 = document.getElementById("detail1") ? document.getElementById("detail1").value : "";
