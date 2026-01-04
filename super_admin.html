@@ -112,7 +112,7 @@
         const SUPABASE_KEY = "sb_publishable__s23ahvDwKLlv78MF-xBDA_MyI02PYq"; // Use Anon Key if RLS allow, or Service Role Key if strictly backend (Be careful with Service Role in frontend!)
         // Note: For a real Super Admin, you should handle Auth carefully. Here we assume Anon Key usually has read access or we rely on some minimal security.
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadData() {
             const list = document.getElementById("shopList");
@@ -133,7 +133,7 @@
                 );
 
                 // Fetch with Timeout Race
-                const shopsPromise = supabase
+                const shopsPromise = supabaseClient
                     .from('shops')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -143,7 +143,7 @@
                 if (shopError) throw shopError;
 
                 // 2. Fetch Total Bookings Count
-                const { count, error: bookingError } = await supabase
+                const { count, error: bookingError } = await supabaseClient
                     .from('bookings')
                     .select('*', { count: 'exact', head: true });
 
