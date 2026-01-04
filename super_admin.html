@@ -132,25 +132,37 @@
                     setTimeout(() => reject(new Error("Connection Timeout: Supabase is too slow (10s)")), 10000)
                 );
 
-                // Fetch with Timeout Race
+                // 1. Fetch Shops
                 const shopsPromise = supabaseClient
                     .from('shops')
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                const { data: shops, error: shopError } = await Promise.race([shopsPromise, timeoutPromise]);
-
-                if (shopError) throw shopError;
-
-                // 2. Fetch Total Bookings Count
-                const { count, error: bookingError } = await supabaseClient
+                // 2. Fetch All Bookings (Only needed fields to reduce size)
+                const bookingsPromise = supabaseClient
                     .from('bookings')
-                    .select('*', { count: 'exact', head: true });
+                    .select('id, shop_id');
 
-                if (bookingError) throw bookingError;
+                // Wait for both
+                const [shopsResult, bookingsResult] = await Promise.all([
+                    shopsPromise,
+                    bookingsPromise
+                ]);
+
+                if (shopsResult.error) throw shopsResult.error;
+                if (bookingsResult.error) throw bookingsResult.error;
+
+                const shops = shopsResult.data;
+                const bookings = bookingsResult.data;
+
+                // Aggregate Booking Counts
+                const bookingCounts = {};
+                bookings.forEach(b => {
+                    bookingCounts[b.shop_id] = (bookingCounts[b.shop_id] || 0) + 1;
+                });
 
                 // Update Stats
-                totalBookingsEl.innerText = count || 0;
+                totalBookingsEl.innerText = bookings.length || 0;
                 totalShopsEl.innerText = shops ? shops.length : 0;
 
                 // Render Shop List
@@ -169,15 +181,27 @@
                 }
 
                 shops.forEach(shop => {
+                    const count = bookingCounts[shop.id] || 0;
+                    const date = new Date(shop.created_at).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' });
+                    const statusColor = (shop.status === 'active') ? '#2ecc71' : '#f1c40f';
+                    const statusText = (shop.status === 'active') ? 'ใช้งาน' : 'ทดลอง';
+
                     const el = document.createElement("div");
                     el.className = "shop-card";
                     el.innerHTML = `
                         <div class="shop-info">
-                            <h3><i class="fas fa-store"></i> ${shop.name}</h3>
-                            <p>${shop.business_type} | Owner: ${shop.owner_line_id ? 'Linked' : 'No Line ID'}</p>
+                            <h3 style="display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-store" style="color:#004aad;"></i> ${shop.name}
+                                <span style="font-size:10px; background:${statusColor}; color:white; padding:2px 6px; border-radius:10px;">${statusText}</span>
+                            </h3>
+                            <div style="color:#666; font-size:12px; margin-top:5px;">
+                                <span style="margin-right:10px;"><i class="fas fa-tag"></i> ${shop.business_type}</span>
+                                <span style="margin-right:10px;"><i class="fas fa-calendar-alt"></i> ${date}</span>
+                                <span><i class="fas fa-clipboard-list"></i> <b>${count}</b> จอง</span>
+                            </div>
                         </div>
-                        <a href="index.html?shop_id=${shop.id}" target="_blank" style="text-decoration:none; font-size:12px; color:#004aad;">
-                            ดูหน้าจอง <i class="fas fa-chevron-right"></i>
+                        <a href="index.html?shop_id=${shop.id}" target="_blank" style="text-decoration:none; font-size:12px; border:1px solid #004aad; color:#004aad; padding:5px 10px; border-radius:5px;">
+                            ดูหน้าจอง
                         </a>
                     `;
                     list.appendChild(el);
