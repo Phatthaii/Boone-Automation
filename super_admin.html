@@ -60,6 +60,21 @@
             float: right;
         }
     </style>
+    <!-- DEBUG: Show errors on screen -->
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed; top:0; left:0; right:0; background:red; color:white; padding:20px; z-index:9999; font-size:12px; overflow:scroll; max-height:50vh; border-bottom:2px solid white;';
+            div.innerText = '🔥 Error: ' + msg + '\nLine: ' + line;
+            document.body.appendChild(div);
+        };
+        window.addEventListener('unhandledrejection', function (event) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed; top:50px; left:0; right:0; background:orange; color:black; padding:20px; z-index:9999; font-size:12px; overflow:scroll; max-height:50vh; border-bottom:2px solid white;';
+            div.innerText = '⚠️ Async Error: ' + (event.reason ? event.reason.message : event.reason);
+            document.body.appendChild(div);
+        });
+    </script>
 </head>
 
 <body>
@@ -68,7 +83,8 @@
         <header>
             <div class="logo-area"><i class="fas fa-user-shield fa-3x"></i></div>
             <h1>System Owner</h1>
-            <p>ภาพรวมระบบทั้งหมด</p>
+            <p>ภาพรวมระบบทั้งหมด <span style="font-size:12px; color:red; background:#fee; padding:2px 5px;">v1.2
+                    (Debug)</span></p>
         </header>
 
         <div class="stat-box">
@@ -106,11 +122,23 @@
             list.innerHTML = '<p style="text-align:center; color:#ccc;"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</p>';
 
             try {
-                // 1. Fetch Shops
-                const { data: shops, error: shopError } = await supabase
+                // 1. Check SDK
+                if (typeof supabase === 'undefined') {
+                    throw new Error("Supabase SDK not loaded. Check internet connection or adblocker.");
+                }
+
+                // Helper for timeout
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Connection Timeout: Supabase is too slow (10s)")), 10000)
+                );
+
+                // Fetch with Timeout Race
+                const shopsPromise = supabase
                     .from('shops')
                     .select('*')
                     .order('created_at', { ascending: false });
+
+                const { data: shops, error: shopError } = await Promise.race([shopsPromise, timeoutPromise]);
 
                 if (shopError) throw shopError;
 
