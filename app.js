@@ -147,6 +147,30 @@ async function initLiff() {
 document.getElementById("bookingForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = document.getElementById("submitBtn");
+
+    // Validate User ID (LIFF)
+    let userId = document.getElementById("userId").value;
+    if (!userId) {
+        // Try getting profile again if missing
+        try {
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+            } else {
+                liff.login();
+                return; // Stop here, wait for redirect
+            }
+        } catch (err) {
+            console.error("LIFF Retry Error", err);
+        }
+
+        if (!userId) {
+            alert("ไม่สามารถระบุตัวตนได้ กรุณาลองใหม่อีกครั้ง หรือเปิดใน LINE");
+            location.reload();
+            return;
+        }
+    }
+
     btn.disabled = true;
     btn.innerText = "กำลังจอง...";
 
