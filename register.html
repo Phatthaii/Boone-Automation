@@ -82,9 +82,11 @@
             try {
                 const btn = document.getElementById("submitBtn");
                 const loader = document.getElementById("loadingMessage");
+                const registerForm = document.getElementById("registerForm");
 
+                // Initially hide form
+                registerForm.style.display = 'none';
                 loader.style.display = "block";
-                btn.style.display = "none";
 
                 await liff.init({ liffId: LIFF_ID });
 
@@ -92,10 +94,30 @@
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    document.getElementById("ownerLineId").value = profile.userId;
+                    const userId = profile.userId;
+
+                    document.getElementById("ownerLineId").value = userId;
                     document.getElementById("ownerDisplayName").value = profile.displayName;
 
+                    // CHECK IF OWNER ALREADY EXISTS
+                    const { data: existingShop, error } = await supabaseClient
+                        .from('shops')
+                        .select('id')
+                        .eq('owner_line_id', userId)
+                        .maybeSingle();
+
+                    if (existingShop) {
+                        // User already has a shop -> Redirect to Admin
+                        loader.innerHTML = '<i class="fas fa-check-circle"></i> พบร้านค้าของคุณ!<br>กำลังเข้าสู่ระบบหลังบ้าน...';
+                        setTimeout(() => {
+                            window.location.href = "admin.html";
+                        }, 1500);
+                        return;
+                    }
+
+                    // No shop found -> Show Register Form
                     loader.style.display = "none";
+                    registerForm.style.display = 'block';
                     btn.style.display = "block";
                     btn.disabled = false;
                     btn.innerText = "ยืนยันการเปิดร้าน";
@@ -143,17 +165,22 @@
                 btn.disabled = false;
                 btn.innerText = "ยืนยันการเปิดร้าน";
             } else {
-                const shopId = data[0].id;
+                const origin = window.location.origin;
+                const path = window.location.pathname.replace('register.html', 'index.html');
+                const bookingLink = `${origin}${path}?shop_id=${shopId}`;
+
                 // Success! Redirect to dashboard or show link
                 document.querySelector('.container').innerHTML = `
                     <div style="text-align:center;">
                         <i class="fas fa-check-circle fa-4x" style="color:#2ecc71; margin-bottom:20px;"></i>
                         <h2>เปิดร้านสำเร็จ!</h2>
-                        <p>ลิงก์สำหรับลูกค้าของคุณคือ:</p>
-                        <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin:15px 0; word-break:break-all;">
-                            https://yourdomain.com/index.html?shop_id=${shopId}
+                        <p>ลูกค้าสามารถจองได้ที่ลิงก์นี้:</p>
+                        <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin:15px 0; word-break:break-all; font-family:monospace; color:#004aad; border:1px dashed #004aad;">
+                            ${bookingLink}
                         </div>
-                        <p>ส่งลิงก์นี้ให้ลูกค้าเพื่อเริ่มรับจองได้เลย</p>
+                        <p style="font-size:14px; color:#666;">แนะนำ: นำลิงก์นี้ไปใส่ใน Rich Menu หรือข้อความทักทายเพื่อนใหม่ใน LINE OA ของร้านคุณ</p>
+                        <br>
+                        <a href="${bookingLink}" class="btn" style="text-decoration:none; display:inline-block; margin-top:10px;">ทดลองจอง (เปิดหน้าจอง)</a>
                     </div>
                 `;
             }
